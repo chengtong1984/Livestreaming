@@ -1,0 +1,149 @@
+yum install -y net-tools wget unzip gcc gcc-c++ perl
+wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo 
+yum makecache
+cd /home
+wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.41.tar.gz
+tar -zxvf pcre-8.41.tar.gz
+wget http://www.zlib.net/zlib-1.2.11.tar.gz
+tar -zxvf zlib-1.2.11.tar.gz
+wget https://www.openssl.org/source/old/1.0.1/openssl-1.0.1i.tar.gz 
+tar -zxvf openssl-1.0.1i.tar.gz 
+cd openssl-1.0.1i 
+./config
+make 
+make install
+wget https://github.com/arut/nginx-rtmp-module/archive/master.zip
+unzip -o master.zip
+mv master nginx-rtmp-module
+nginx wget http://nginx.org/download/nginx-1.12.2.tar.gz 
+nignx tar -zxvf nginx-1.12.2.tar.gz 
+cd nginx-1.12.2
+./configure --prefix=/usr/local/nginx --with-pcre=/home/pcre-8.41 --with-zlib=/home/zlib-1.2.11 --with-openssl=/home/openssl-1.0.1i --add-module=/home/nginx-rtmp-module
+make 
+make install 
+nginx -V
+yum install -y epel-release 
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+rpm --import http://li.nux.ro/download/nux/RPM-GPG-KEY-nux.ro 
+rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-1.el7.nux.noarch.rpm 
+yum update -y 
+yum install -y ffmpeg 
+ffmpeg -version
+
+vi /usr/local/nginx/conf/nginx.conf
+
+#user nobody;
+worker_processes 1;
+#
+##error_log logs/error.log;
+##error_log logs/error.log notice;
+##error_log logs/error.log info;
+#
+##pid logs/nginx.pid;
+#
+#
+events {
+worker_connections 1024;
+}
+#RTMP閰嶇疆
+rtmp{
+server{
+listen 1935;
+application myapp{
+live on;
+}
+application hls{
+live on;
+hls on;
+hls_path /tmp/hls;
+}
+}
+}
+#
+http {
+include mime.types;
+default_type application/octet-stream;
+#
+##log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+## '$status $body_bytes_sent "$http_referer" '
+## '"$http_user_agent" "$http_x_forwarded_for"';
+#
+access_log logs/access.log;
+#
+sendfile on;
+##tcp_nopush on;
+#
+##keepalive_timeout 0;
+keepalive_timeout 65;
+#
+gzip on;
+#include /usr/local/nginx/conf.d/*.conf;
+server {
+listen 80;
+server_name localhost;
+#
+##charset koi8-r;
+#
+##access_log logs/host.access.log main;
+#
+location / {
+root html;
+index index.html index.htm;
+}
+location /hls {
+types{
+application/vnd.apple.mpegurl m3u8;
+video/mp2t ts;
+}
+root /tmp;
+add_header Cache-Control no-cache;
+}
+##error_page 404 /404.html;
+#
+## redirect server error pages to the static page /50x.html
+##
+error_page 500 502 503 504 /50x.html;
+location = /50x.html {
+root html;
+}
+}
+}
+#
+## proxy the PHP scripts to Apache listening on 127.0.0.1:80
+##
+##location ~ \.php$ {
+## proxy_pass http://127.0.0.1;
+##}
+#
+## pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+##
+##location ~ \.php$ {
+## root html;
+## fastcgi_pass 127.0.0.1:9000;
+## fastcgi_index index.php;
+## fastcgi_param SCRIPT_FILENAME /scripts$fastcgi_script_name;
+## include fastcgi_params;
+##}
+#
+## deny access to .htaccess files, if Apache's document root
+## concurs with nginx's one
+##
+##location ~ /\.ht {
+## deny all;
+##}
+#
+#
+## another virtual host using mix of IP-, name-, and port-based configurati
+##error_page 404 /404.html;
+#
+## redirect server error pages to the static page /50x.html
+##
+
+ffmpeg -re -i ychx.mp4 -vcodec copy -codec copy -f flv rtmp://192.168.199.145/hls/cctv
+
+测试访问
+视频切片保存位置：/tmp/hls/
+m3u8视频访问地址：http://192.168.199.145/hls/cctv.m3u8
+ 重启nginx
+/usr/local/nginx/sbin/nginx -s reload
+
