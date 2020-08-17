@@ -153,3 +153,7 @@ m3u8视频访问地址：http://192.168.199.145/hls/cctv.m3u8
  重启nginx
 /usr/local/nginx/sbin/nginx -s reload
 
+ffmpeg -re -analyzeduration 8000 -probesize 200000 -i http://cctvalih5ca.v.myalicdn.com/live/cctv1_2/index.m3u8 -strict -2 -c:v copy -c:a aac -bsf:a aac_adtstoasc -f flv rtmp://10.179.245.107/hls/test
+
+发现录制的文件没有AudioSpecificConfig(ASC)信息。有同学问什么是ASC，可以看这里。前面有篇文章介绍了在windows下编译ffmpeg，打开这个debug一下看看。
+
